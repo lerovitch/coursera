@@ -1,3 +1,4 @@
+#include <stdio.h>
 /* 
  * CSE 351 HW1 (Data Lab )
  * 
@@ -157,7 +158,10 @@ int thirdBits(void) {
  *   Rating: 2
  */
 int fitsBits(int x, int n) {
-  return 2;
+  int sign = ((x >> 31) & 1) << 31;
+  int val = (((x << (32 - n)) | sign ) >> (32 - n)) ^ x;
+  // the ! for an integer gives 0 if is 0, 1 otherwise. 
+  return (!val & 1) | (val & 0);
 }
 /* 
  * sign - return 1 if positive, 0 if zero, and -1 if negative
@@ -168,7 +172,10 @@ int fitsBits(int x, int n) {
  *  Rating: 2
  */
 int sign(int x) {
-  return 2;
+  int sign = ((x >> 31) & 1);
+  // the ! for an integer gives 0 if is 0, 1 otherwise. 
+  // the double !! is for normalizing any positive integer to 1
+  return ((x >> 31) ^ 0) | (!sign & !!(x ^ 0));
 }
 /* 
  * getByte - Extract byte n from word x
@@ -179,7 +186,8 @@ int sign(int x) {
  *   Rating: 2
  */
 int getByte(int x, int n) {
-  return 2;
+  int mask = (0xFF << 8*n);
+  return ((x & mask) >> 8 * n) & 0xFF;
 }
 // Rating: 3
 /* 
@@ -191,7 +199,9 @@ int getByte(int x, int n) {
  *   Rating: 3 
  */
 int logicalShift(int x, int n) {
-  return 2;
+
+  int mask = ~(((1 << 31) >> n) << 1);
+  return (x >> n) & mask;
 }
 /* 
  * addOK - Determine if can compute x+y without overflow
@@ -202,7 +212,10 @@ int logicalShift(int x, int n) {
  *   Rating: 3
  */
 int addOK(int x, int y) {
-  return 2;
+  int signX = (x >> 31) & 1; 
+  int signY = (y >> 31) & 1; 
+  int signSum = ((x + y) >> 31) & 1;
+  return (signX ^ signY) | !(signX ^ signSum);
 }
 // Rating: 4
 /* 
@@ -213,7 +226,10 @@ int addOK(int x, int y) {
  *   Rating: 4 
  */
 int bang(int x) {
-  return 2;
+  int addNumber = ~(1 << 31);
+  int signAdded = ((x + addNumber) >> 31) & 1;
+  int sign = (x >> 31) & 1;
+  return ((x ^ ~0) & (sign | signAdded) + (~0)) & 1;
 }
 // Extra Credit: Rating: 3
 /* 
@@ -224,7 +240,8 @@ int bang(int x) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+  int mask = ((!!x) << 31) >> 31;
+  return (mask & y) | (~mask & z);
 }
 // Extra Credit: Rating: 4
 /*
