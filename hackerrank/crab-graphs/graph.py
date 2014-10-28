@@ -1,6 +1,16 @@
 import sys
-from combinations import get_combinations
 
+def get_combinations(ls, number):
+    elements = list(ls)
+    result = list()
+    for i, element in enumerate(elements):
+        if number == 1:
+            result.append([element])
+        else:
+            for rt in get_combinations(elements[i+1:], number - 1):
+                rt.append(element)
+                result.append(rt)
+    return result
 
 class Graph(object):
 
@@ -42,6 +52,7 @@ class CrabGraph(object):
 
 def main():
     data = sys.stdin.readlines()
+
     graphs = int(data.pop(0).strip())
 
     for i in range(graphs): 
@@ -54,12 +65,9 @@ def main():
 
         crab = CrabGraph(graph, int(tails))
         sources = crab.get_sources()
-        print "sources: ", sources
-        for source in sources:
-            print "source:", source, graph.nodes[source]
+        sources = range(len(graph.nodes))  # for non consecutive node ids might have a problem
 
         paths = crab.get_paths(sources)
-        print paths
 
         max_comb_found = 0
         max_nodes = len(sources) * int(tails)
@@ -67,6 +75,7 @@ def main():
         
         def get_paths():
             selected_nodes = set([])
+            paths.sort(key=lambda x: len(x))
             for path in paths:
                 if not selected_nodes.intersection(path):
                     selected_nodes = selected_nodes.union(path)
