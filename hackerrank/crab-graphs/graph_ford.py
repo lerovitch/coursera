@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 
+
 class Edge(object):
 
     def __init__(self, origin, dest, capability=float("inf")):
@@ -10,45 +11,47 @@ class Edge(object):
         self.origin = origin
         self.dest = dest
 
+    def __eq__(self, other):
+        return self.origin == other.origin and self.dest == other.dest
+
     def __repr__(self):
         return "(" + str(self.origin) + "," + str(self.dest) + ")"
 
 
-class DFS(object):
+class FindingPaths(object):
+
     def __init__(self, graph):
         self.graph = graph
-
-    def dfs(self, s, t):
-        self.edge_to = []
         self.paths = []
-        self.s = s
-        self.t = t
-        for i in range(2 + 2*self.graph.num_nodes):
-            self.edge_to.append(None)
-        self.get_paths(s)
 
-    def get_paths(self, s):
+    def get_paths(self, origin, dest):
+        self.s = origin
+        self.t = dest
+        edge_to = [None] * len(self.graph.adj)
+        self.dfs(origin, [], edge_to)
 
-        import ipdb; ipdb.set_trace()
-        for i_edge in self.graph.adj[s]:
-            backward = True if i_edge.dest == s else False
-            node = i_edge.dest if not backward else i_edge.origin
-            print s, i_edge, node
-            if node == self.t:
-                path = [i_edge]
-                prev_edge = self.edge_to[s]
-                path.append(prev_edge)
-                prev_backward = True if prev_edge.origin == node else False
-                prev_origin = prev_edge.origin if not prev_backward else prev_edge.dest
-                while prev_origin != self.s:
-                    prev_edge = self.edge_to[prev_origin]
-                    path.append(prev_edge)
-                self.paths.append(path[::-1])
-                break
+    def dfs(self, origin, marked, edge_to):
+        marked = list(marked)
+        edge_to = list(edge_to)
 
-            self.edge_to[node] = i_edge
-            self.get_paths(node)
-
+        for edge in self.graph.adj[origin]:
+            if edge not in marked:
+                dest = edge.dest if edge.origin == origin else edge.origin
+                if dest == self.t:
+                    marked.append(edge)
+                    path = [edge]
+                    edge_from = edge_to[origin]
+                    import ipdb; ipdb.set_trace()
+                    while edge_from is not None:
+                        path.insert(0, edge_from)
+                        node_from = edge.origin if edge.origin == origin else edge.dest
+                        edge_from = edge_to[node_from]
+                    if path not in self.paths:
+                        self.paths.append(path)
+                elif dest != self.s:
+                    edge_to[dest] = edge
+                    marked.append(edge)
+                    self.dfs(dest, marked, edge_to)
 
 
 class Graph(object):
@@ -56,7 +59,7 @@ class Graph(object):
     def __init__(self, num_nodes):
         self.num_nodes = num_nodes
         self.adj = []
-        for i in range(num_nodes*2 + 2):
+        for i in range(num_nodes * 2 + 2):
             self.adj.append([])
 
     def add_edge(self, v, w):
@@ -100,10 +103,8 @@ def main():
             graph.adj[output_node].append(Edge(output_node, 1, 1))
             graph.adj[output_node].append(Edge(output_node, 1, 1))
 
-        dfs = DFS(graph)
-        dfs.dfs(0,1)
-
-        output = 0
+        dfs = FindingPaths(graph)
+        dfs.get_paths(0, 1)
 
         for path in dfs.paths:
             print path
@@ -119,7 +120,6 @@ def main():
         #            if edge.capability < float("inf"):
         #                edge.capability -= 1
 
-        print output
 
 
 
