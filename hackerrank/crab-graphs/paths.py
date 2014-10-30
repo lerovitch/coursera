@@ -8,8 +8,8 @@ class Graph(object):
             self.adj.append([])
 
     def add_edge(self, v, w):
-        v = int(v) - 1
-        w = int(w) - 1
+        v = int(v)
+        w = int(w)
         self.adj[v].append((v, w))
         self.adj[w].append((v, w))
 
@@ -37,9 +37,10 @@ class FindingPaths(object):
                     marked.append(edge)
                     path = [edge]
                     edge_from = edge_to[origin]
+                    node_from = origin
                     while edge_from is not None:
                         path.insert(0, edge_from)
-                        node_from = edge_from[0] if edge_from[0] != origin else edge_from[1]
+                        node_from = edge_from[0] if edge_from[0] != node_from else edge_from[1]
                         edge_from = edge_to[node_from]
                     self.paths.append(path)
                 elif dest != self.s:
@@ -49,7 +50,7 @@ class FindingPaths(object):
 
 
 def main():
-    lines = open("paths.txt").readlines()
+    lines = open("paths2.txt").readlines()
     nodes, edges = lines.pop(0).split(" ")
     graph = Graph(int(nodes))
     for _ in range(int(edges)):
@@ -57,7 +58,7 @@ def main():
         graph.add_edge(v, w)
 
     f_paths = FindingPaths(graph)
-    f_paths.get_paths(0, 3)
+    f_paths.get_paths(0, 1)
 
     for path in f_paths.paths:
         print path

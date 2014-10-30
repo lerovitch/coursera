@@ -41,10 +41,10 @@ class FindingPaths(object):
                     marked.append(edge)
                     path = [edge]
                     edge_from = edge_to[origin]
-                    import ipdb; ipdb.set_trace()
+                    node_from = origin
                     while edge_from is not None:
                         path.insert(0, edge_from)
-                        node_from = edge.origin if edge.origin == origin else edge.dest
+                        node_from = edge_from.origin if edge_from.origin != node_from else edge_from.dest
                         edge_from = edge_to[node_from]
                     if path not in self.paths:
                         self.paths.append(path)
