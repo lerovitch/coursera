@@ -3,6 +3,9 @@
 import sys
 import random
 
+
+BLACK = 0
+RED = 1
 class Node(object):
 
     def __init__(self, value=None, parent=None):
@@ -10,32 +13,46 @@ class Node(object):
         self.parent = parent
         self.left = None
         self.right = None
+        self.color = BLACK
         self.size = 1 if value else 0
 
     def insert(self, node):
-        if self.value is None:
-            if not isinstance(node, Node):
-                self.value = node
-            else:
-                self.value = node.value
-            return 
-
         if not isinstance(node, Node):
             node = Node(node)
 
         self.size += 1
-        if self.value >= node.value:
+        if self.value is None:
+            self.value = node.value
+            self.color = RED
+
+        elif self.value >= node.value:
             if self.left:
-                self.left.insert(node)
+                self.left = self.left.insert(node)
             else:
-                self.left = node
-                node.parent = self
+                self.left = Node(parent=self).insert(node)
+
         elif self.value < node.value:
             if self.right:
-                self.right.insert(node)
+                self.right = self.right.insert(node)
             else:
-                self.right = node
                 node.parent = self
+                self.right = Node(parent=self).insert(node)
+
+        h = self
+
+        if h.left and h.left.left and h.left.color == RED and h.left.left.color == RED:
+            h = self.rotate_right()
+
+        if h.right and h.right.color == RED and ((h.left and h.left.color == BLACK) or not h.left):
+            h = self.rotate_left()
+
+        if h.right and h.right.color == RED and h.left and h.left.color == RED:
+            h.flip_colors()
+
+        if h.parent is None:
+            h.color = BLACK
+
+        return h
 
     def get(self, value):
         if self.value == value:
@@ -60,26 +77,64 @@ class Node(object):
 
     def delete_wone_children(self):
         if self.parent:
-            if self.right:
+            if self.parent.right == self and self.right:
                 self.parent.right = self.right
                 self.right.parent = self.parent
-            else:
+            elif self.parent.left == self and self.right: 
+                self.parent.left = self.right
+                self.right.parent = self.parent
+
+            elif self.parent.right == self and self.left: 
+                self.parent.right = self.left
+                self.left.parent = self.parent
+            elif self.parent.left == self and self.left: 
                 self.parent.left = self.left
                 self.left.parent = self.parent
         else:
             self.value = (self.right and self.right.value) or (self.left and self.left.value)
             self.right = None
             self.left = None
-        print "wone", self.parent
-        print "wone", self.left
-        print "wone", self.right
-
 
     def min(self):
         if self.left:
             return self.left.min()
         else:
             return self
+
+    def rotate_left(self):
+        """rotate a node that has a right child as red"""
+        assert self.right.color == RED
+        print "rotate left", self
+        x = self.right
+        self.right = x.left
+        x.left = self
+        x.color = self.color
+        x.parent = self.parent
+        self.parent = x
+        self.color = RED
+        return x
+
+    def rotate_right(self):
+        """rotate a node that has a left child as red"""
+        assert self.left.color == RED
+        print "rotate right", self
+        x = self.left
+        x.parent = self.parent
+        self.left = x.right
+        x.right = self
+        self.parent = x
+        x.color = self.color
+        self.color = RED
+        return x
+
+    def flip_colors(self):
+        assert self.color != RED
+        assert self.left.color == RED
+        assert self.right.color == RED
+        print "flipping colors", self
+        self.color = RED
+        self.left.color = BLACK
+        self.right.color = BLACK
 
     def interval(self, i_min, i_max, ls=None): 
         if ls is None:
@@ -109,19 +164,13 @@ class Node(object):
             deleted = self.left.delete(value)
         elif self.value == value:
             if not self.left and not self.right:
-                print "deleting no children", self
                 self.delete_min()
                 deleted = 1
             elif (not self.left and self.right) or (not self.right and self.left):
-                print "deleting one children", self
                 self.delete_wone_children()
                 deleted = 1
             else:
-                print "deleting two children", self
                 successor = self.right.min()
-                print "successor", successor
-                if successor.value == self.value:
-                    import ipdb; ipdb.set_trace()
                 self.delete(successor.value)
                 self.value = successor.value
         self.size -= deleted
@@ -130,18 +179,20 @@ class Node(object):
     def __repr__(self):
         left = str(self.left.value) if self.left else ""
         right = str(self.right.value) if self.right else ""
-        return "(" + str(self.value) + ")" + " size: " + str(self.size) + " left:" + left + " right:" + right
+        color = "red" if self.color == RED else "black"
+        return str(self.value) + " " + color + " l:" + left + " r:" + right
 
 
-#node = Node(10)
-#node.insert(Node(5))
-#node.insert(Node(20))
-#node.insert(Node(15))
-#node.insert(Node(25))
-#node.insert(Node(19))
-#node.insert(Node(24))
+node = Node(10)
+node = node.insert(Node(5))
+node = node.insert(Node(20))
+node = node.insert(Node(18))
+node = node.insert(Node(19))
+node = node.insert(Node(21))
+import ipdb; ipdb.set_trace()
+print "a"
 
-
+sys.exit(1)
 
 def main():
     """docstring for main"""
