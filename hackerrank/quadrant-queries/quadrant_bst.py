@@ -14,13 +14,17 @@ class Node(object):
         self.left = None
         self.right = None
         self.color = BLACK
-        self.size = 1 if value else 0
+        self.height = 0
+
+    def size(self):
+        left_size = self.left.size() if self.left else 0
+        right_size = self.right.size() if self.right else 0
+        return left_size + right_size + 1
 
     def insert(self, node):
         if not isinstance(node, Node):
             node = Node(node)
 
-        self.size += 1
         if self.value is None:
             self.value = node.value
             self.color = RED
@@ -104,7 +108,6 @@ class Node(object):
     def rotate_left(self):
         """rotate a node that has a right child as red"""
         assert self.right.color == RED
-        print "rotate left", self
         x = self.right
         self.right = x.left
         x.left = self
@@ -117,7 +120,6 @@ class Node(object):
     def rotate_right(self):
         """rotate a node that has a left child as red"""
         assert self.left.color == RED
-        print "rotate right", self
         x = self.left
         x.parent = self.parent
         self.left = x.right
@@ -131,7 +133,6 @@ class Node(object):
         assert self.color != RED
         assert self.left.color == RED
         assert self.right.color == RED
-        print "flipping colors", self
         self.color = RED
         self.left.color = BLACK
         self.right.color = BLACK
@@ -173,8 +174,26 @@ class Node(object):
                 successor = self.right.min()
                 self.delete(successor.value)
                 self.value = successor.value
-        self.size -= deleted
         return deleted
+
+    def get_height(self):
+        nodes = []
+        if self.left:
+            nodes.append(self.left)
+            self.left.height = self.height + 1
+        if self.right:
+            nodes.append(self.right)
+            self.right.height = self.height + 1
+
+        while nodes:
+            next = nodes.pop(0)
+            if next.left:
+                nodes.append(next.left)
+                next.left.height = next.height + 1
+            if next.right:
+                nodes.append(next.right)
+                next.right.height = next.height + 1
+        return next.height
 
     def __repr__(self):
         left = str(self.left.value) if self.left else ""
@@ -189,10 +208,8 @@ node = node.insert(Node(20))
 node = node.insert(Node(18))
 node = node.insert(Node(19))
 node = node.insert(Node(21))
-import ipdb; ipdb.set_trace()
-print "a"
-
-sys.exit(1)
+node.get_height()
+print node.size()
 
 def main():
     """docstring for main"""
@@ -243,29 +260,34 @@ def main():
                 #else:
                 #    quadrant_1.insert(Node(i))
     while ls_quadrant_1:
-        value = random.choice(ls_quadrant_1)
-        ls_quadrant_1.remove(value)
-        quadrant_1.insert(value)
+        #ls_quadrant_1.remove(value)
+        #value = random.choice(ls_quadrant_1)
+        value = ls_quadrant_1.pop()
+        quadrant_1 = quadrant_1.insert(value)
     while ls_quadrant_2:
-        value = random.choice(ls_quadrant_2)
-        ls_quadrant_2.remove(value)
-        quadrant_2.insert(value)
+        #value = random.choice(ls_quadrant_2)
+        #ls_quadrant_2.remove(value)
+        value = ls_quadrant_2.pop()
+        quadrant_2 = quadrant_2.insert(value)
     while ls_quadrant_3:
-        value = random.choice(ls_quadrant_3)
-        ls_quadrant_3.remove(value)
-        quadrant_3.insert(value)
+        #value = random.choice(ls_quadrant_3)
+        #ls_quadrant_3.remove(value)
+        value = ls_quadrant_3.pop()
+        quadrant_3 = quadrant_3.insert(value)
     while ls_quadrant_4:
-        value = random.choice(ls_quadrant_4)
-        ls_quadrant_4.remove(value)
-        quadrant_4.insert(value)
+        #value = random.choice(ls_quadrant_4)
+        #ls_quadrant_4.remove(value)
+        value = ls_quadrant_4.pop()
+        quadrant_4 = quadrant_4.insert(value)
 
-    
-    print quadrant_1.size
-    print quadrant_2.size
-    print quadrant_3.size
-    print quadrant_4.size
-
-
+    print "q1: " + str(quadrant_1.size())
+    print "q2: " + str(quadrant_2.size())
+    print "q3: " + str(quadrant_3.size())
+    print "q4: " + str(quadrant_4.size())
+    print "q1: " + str(quadrant_1.get_height())
+    print "q2: " + str(quadrant_2.get_height())
+    print "q3: " + str(quadrant_3.get_height())
+    print "q4: " + str(quadrant_4.get_height())
 
     n_queries = int(lines.pop(0))
     queries = []
@@ -280,18 +302,32 @@ def main():
             to_2 = quadrant_3.interval(query[1], query[2])
             to_1 = quadrant_4.interval(query[1], query[2])
             for i in to_1:
-                print "inserting", i
-                quadrant_1.insert(i)
-                print "deleting", i
+
+                print "q1 inserting:", i
+                quadrant_1 = quadrant_1.insert(i)
+                if i == 2980:
+                    #import ipdb; ipdb.set_trace()
+                    pass
                 quadrant_4.delete(i)
+                print "q4 deleted:", i, quadrant_4.get(2982).parent if quadrant_4.get(2982) else None, quadrant_4.get(2982)
             for i in to_2:
-                quadrant_2.insert(i)
+                print "q2 inserting:", i
+                quadrant_2 = quadrant_2.insert(i)
+                print "q3 deleting:", i
                 quadrant_3.delete(i)
             for i in to_3:
-                quadrant_3.insert(i)
+                print "q3 inserting:", i
+                quadrant_3 = quadrant_3.insert(i)
+                print "q2 deleting:", i
                 quadrant_2.delete(i)
             for i in to_4:
-                quadrant_4.insert(i)
+                quadrant_4 = quadrant_4.insert(i)
+                if i == 2982:
+                    pass
+
+                print "q4 inserted:", i, quadrant_4.get(2982).parent if quadrant_4.get(2982) else None, quadrant_4.get(2982)
+               # print "q4 inserted:", i, quadrant_4.get(2982)
+                print "q1 deleting:", i
                 quadrant_1.delete(i)
 
         elif query[0] == "Y":
