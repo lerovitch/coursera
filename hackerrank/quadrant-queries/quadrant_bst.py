@@ -95,9 +95,14 @@ class Node(object):
                 self.parent.left = self.left
                 self.left.parent = self.parent
         else:
-            self.value = (self.right and self.right.value) or (self.left and self.left.value)
-            self.right = None
-            self.left = None
+            node = self.right if self.right else self.left
+            self.value = node.value
+            self.right = node.right
+            self.left = node.left
+            if self.right:
+                self.right.parent = self
+            if self.left:
+                self.left.parent = self
 
     def min(self):
         if self.left:
@@ -133,15 +138,15 @@ class Node(object):
         if x.right:
             x.right.parent = self
 
-        x.right = self
         self.left = x.right
+        x.right = self
 
         x.color = self.color
         self.color = RED
         return x
 
     def flip_colors(self):
-        assert self.color != RED
+       # assert self.color != RED
         assert self.left.color == RED
         assert self.right.color == RED
         self.color = RED
@@ -151,11 +156,11 @@ class Node(object):
     def interval(self, i_min, i_max, ls=None): 
         if ls is None:
             ls = []
-        if self.left and self.left.value >= i_min:
+        if self.left and self.value > i_min:
             self.left.interval(i_min, i_max, ls)
         if i_max >= self.value and i_min <= self.value:
             ls.append(self.value)
-        if self.right and self.right.value <= i_max:
+        if self.right and i_max >= self.value:
             self.right.interval(i_min, i_max, ls)
         return ls
 
@@ -167,28 +172,69 @@ class Node(object):
             self.right.inorder(ls)
         return ls
 
+    def sanity(self):
+        nodes = []
+        values = [self.value]
+        next = None
+        if self.left:
+            if not self.left.parent == self:
+                print self.value, id(self), "p", self.left.parent, id(self.left.parent)
+                raise Exception("Sanity failed")
+            nodes.append(self.left)
+            if self.left.value in values:
+                print self.left.value
+                raise Exception("Sanity failed duplication")
+            values.append(self.left.value)
+        if self.right:
+            if not self.right.parent == self:
+                print self.value, id(self), "p", self.right.parent, id(self.right.parent)
+                raise Exception("Sanity failed")
+            nodes.append(self.right)
+            if self.right.value in values:
+                print self.right.value
+                raise Exception("Sanity failed duplication")
+            values.append(self.right.value)
+
+        while nodes:
+            next = nodes.pop(0)
+            if next.left:
+                if not next.left.parent == next:
+                    print next.value, id(next), "p", next.left.parent, id(next.left.parent)
+                    raise Exception("Sanity failed")
+                nodes.append(next.left)
+                if next.left.value in values:
+                    print next.left.value
+                    raise Exception("Sanity failed duplication")
+                values.append(next.left.value)
+            if next.right:
+                if not next.right.parent == next:
+                    print next.value, id(next), "p", next.right.parent, id(next.right.parent)
+                    raise Exception("Sanity failed")
+                nodes.append(next.right)
+                if next.right.value in values:
+                    print next.right.value
+                    raise Exception("Sanity failed duplication")
+                values.append(next.right.value)
+
     def delete(self, value):
-        deleted = 0
         if self.right and self.value < value:
-            deleted = self.right.delete(value)
+            self.right.delete(value)
 
         elif self.left and self.value > value:
-            deleted = self.left.delete(value)
+            self.left.delete(value)
         elif self.value == value:
             if not self.left and not self.right:
                 self.delete_min()
-                deleted = 1
             elif (not self.left and self.right) or (not self.right and self.left):
                 self.delete_wone_children()
-                deleted = 1
             else:
                 successor = self.right.min()
                 self.delete(successor.value)
                 self.value = successor.value
-        return deleted
 
     def get_height(self):
         nodes = []
+        next = None
         if self.left:
             nodes.append(self.left)
             self.left.height = self.height + 1
@@ -204,7 +250,13 @@ class Node(object):
             if next.right:
                 nodes.append(next.right)
                 next.right.height = next.height + 1
-        return next.height
+        if next:
+            return next.height
+        else:
+            return 0
+
+    def __eq__(self, other):
+        return id(self) == id(other)
 
     def __repr__(self):
         left = str(self.left.value) if self.left else ""
@@ -213,18 +265,11 @@ class Node(object):
         return str(self.value) + " " + color + " l:" + left + " r:" + right
 
 
-node = Node(10)
-node = node.insert(Node(5))
-node = node.insert(Node(20))
-node = node.insert(Node(18))
-node = node.insert(Node(19))
-node = node.insert(Node(21))
-node.get_height()
-print node.size()
-
 def main():
     """docstring for main"""
+    #lines = open("sample.txt").readlines()
     lines = open("input03.txt").readlines()
+    #lines = open("input01.txt").readlines()
     #lines = sys.stdin.readlines()
 
     # reading points
@@ -246,66 +291,30 @@ def main():
         if point[0] < 0:
             if point[1] < 0:
                 ls_quadrant_3.append(Node(i))
-
-                #if quadrant_3 is None:
-                #    quadrant_3 = Node(i)
-                #else:
-                #    quadrant_3.insert(Node(i))
             else:
                 ls_quadrant_2.append(Node(i))
-                #if quadrant_2 is None:
-                #    quadrant_2 = Node(i)
-                #else:
-                #    quadrant_2.insert(Node(i))
         else:
             if point[1] < 0:
                 ls_quadrant_4.append(Node(i))
-                #if quadrant_4 is None:
-                #    quadrant_4 = Node(i)
-                #else:
-                #    quadrant_4.insert(Node(i))
             else:
                 ls_quadrant_1.append(Node(i))
-                #if quadrant_1 is None:
-                #    quadrant_1 = Node(i)
-                #else:
-                #    quadrant_1.insert(Node(i))
     while ls_quadrant_1:
-        #ls_quadrant_1.remove(value)
-        #value = random.choice(ls_quadrant_1)
         value = ls_quadrant_1.pop()
         quadrant_1 = quadrant_1.insert(value)
     while ls_quadrant_2:
-        #value = random.choice(ls_quadrant_2)
-        #ls_quadrant_2.remove(value)
         value = ls_quadrant_2.pop()
         quadrant_2 = quadrant_2.insert(value)
     while ls_quadrant_3:
-        #value = random.choice(ls_quadrant_3)
-        #ls_quadrant_3.remove(value)
         value = ls_quadrant_3.pop()
         quadrant_3 = quadrant_3.insert(value)
     while ls_quadrant_4:
-        #value = random.choice(ls_quadrant_4)
-        #ls_quadrant_4.remove(value)
         value = ls_quadrant_4.pop()
         quadrant_4 = quadrant_4.insert(value)
-
-
-    print "q1: " + str(quadrant_1.size())
-    print "q2: " + str(quadrant_2.size())
-    print "q3: " + str(quadrant_3.size())
-    print "q4: " + str(quadrant_4.size())
-    print "q1: " + str(quadrant_1.get_height())
-    print "q2: " + str(quadrant_2.get_height())
-    print "q3: " + str(quadrant_3.get_height())
-    print "q4: " + str(quadrant_4.get_height())
 
     n_queries = int(lines.pop(0))
     queries = []
     for _ in range(n_queries):
         query = lines.pop(0).split()
-        print "QUERY", query
         query[1] = int(query[1])
         query[2] = int(query[2])
         if query[0] == "X":
@@ -316,22 +325,14 @@ def main():
             for i in to_1:
                 quadrant_1 = quadrant_1.insert(i)
                 quadrant_4.delete(i)
-                #print "q4 deleted:", i, "2982 parent:", quadrant_4.get(2982).parent if quadrant_4.get(2982) else None, "2982>", quadrant_4.get(2982)
             for i in to_2:
                 quadrant_2 = quadrant_2.insert(i)
                 quadrant_3.delete(i)
             for i in to_3:
                 quadrant_3 = quadrant_3.insert(i)
                 quadrant_2.delete(i)
-            n_5173 = quadrant_4.get(5173)
             for i in to_4:
-                #if i == 2943:
-                #    import ipdb; ipdb.set_trace()
                 quadrant_4 = quadrant_4.insert(i)
-                n_5173 = quadrant_4.get(5173)
-                #print "q4 inserted:", i, "2982 parent:", quadrant_4.get(2982).parent if quadrant_4.get(2982) else None, "2982:", quadrant_4.get(2982)
-                # print "q4 inserted:", i, quadrant_4.get(2982)
-                #print "q1 deleting:", i
                 quadrant_1.delete(i)
 
         elif query[0] == "Y":
@@ -340,16 +341,16 @@ def main():
             to_4 = quadrant_3.interval(query[1], query[2])
             to_3 = quadrant_4.interval(query[1], query[2])
             for i in to_1:
-                quadrant_1.insert(i)
+                quadrant_1 = quadrant_1.insert(i)
                 quadrant_2.delete(i)
             for i in to_2:
-                quadrant_2.insert(i)
+                quadrant_2 = quadrant_2.insert(i)
                 quadrant_1.delete(i)
             for i in to_3:
-                quadrant_3.insert(i)
+                quadrant_3 = quadrant_3.insert(i)
                 quadrant_4.delete(i)
             for i in to_4:
-                quadrant_4.insert(i)
+                quadrant_4 = quadrant_4.insert(i)
                 quadrant_3.delete(i)
 
 
