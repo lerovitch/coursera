@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="/Users/sergi/coursera/algs4/lib/algs4.jar"/>
+	<classpathentry kind="lib" path="/Users/sergi/coursera/algs4/lib/stdlib.jar"/>
+	<classpathentry kind="lib" path="/Users/sergi/coursera/algs4/lib/checkstyle-5.5/checkstyle-5.5-all.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
