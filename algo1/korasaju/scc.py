@@ -22,18 +22,24 @@ class DFS(object):
         self.marked = [None] * len(adj)
         self.finishing = [None] * len(adj)
         self.finishing[0] = (0, 0)
-        self.leader = [None] * len(adj)
+        self.leaders = [None] * len(adj)
         self.adj = adj
         self.t = 0
+        self.leader = None
 
-    def dfs(self, v, s):
+    def dfs(self, v):
         # marking v as explored
+        assert v != 0
         self.marked[v] = 1
-        self.leader[v] = s
+        self.leaders[v] = self.leader
 
-        for node in self.adj[v]:
-            if self.marked[node] is None:
-                self.dfs(node, s)
+        try:
+            for node in self.adj[v]:
+                if self.marked[node] is None:
+                    assert node <= 875714
+                    self.dfs(node)
+        except IndexError, e:
+            print e, v
 
         #setting finishing time
         self.t += 1
@@ -42,7 +48,8 @@ class DFS(object):
 
 
 def main():
-    lines = sys.stdin.readlines()
+    #lines = sys.stdin.readlines()
+    lines = open("SCC.txt").readlines()
     n = int(lines[0])
     scc = SCC(n)
 
@@ -54,22 +61,22 @@ def main():
     r_dfs = DFS(scc.rev)
     for i in range(n, 0, -1):
         if r_dfs.marked[i] is None:
-            print "starting with", i
-            r_dfs.dfs(i, i)
-
+            r_dfs.dfs(i)
+    print r_dfs.finishing.pop(0)
     r_dfs.finishing.sort(key=lambda x: x[1], reverse=True)
-    for i, node in enumerate(r_dfs.finishing):
-        print i, ":", node
 
     dfs = DFS(scc.adj)
-    leader = 0
-    for s, i in r_dfs.finishing[1:]:
+    for s, i in r_dfs.finishing:
+        assert s <= 875714
         if dfs.marked[s] is None:
-            leader += 1
-            dfs.dfs(s, leader)
+            dfs.leader = s
+            dfs.dfs(s)
 
-    leaders = [None] * len(dfs.leader)
-    for i, node in enumerate(dfs.leader[1:], 1):
+    assert dfs.leaders[0] is None
+    assert dfs.marked[0] is None
+
+    leaders = [None] * len(dfs.leaders)
+    for i, node in enumerate(dfs.leaders[1:], 1):
         try:
             leaders[node] += 1
         except:
@@ -77,8 +84,7 @@ def main():
 
     leaders = filter(None, leaders)
     leaders.sort(reverse=True)
-    for i in leaders[:5]:
-        print i
+    print leaders[:10], sum(leaders)
 
 
 if __name__ == '__main__':
