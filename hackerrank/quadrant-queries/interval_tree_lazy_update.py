@@ -16,6 +16,7 @@ END = 1
 
 DEBUG = False
 
+
 def log(*args):
     if DEBUG:
         print args
@@ -36,11 +37,13 @@ class SegmentTree(object):
         self.elements[self.i] = element
         self.n = self.i - self.zero + 1
         element.init = element.end = self.n
+        element.n = self.i
         self.i += 1
 
     def get(self, index):
         return self.elements[self.zero + index - 1] 
 
+    #@profile
     def query(self, query):
         quads = [0] * 4
         for i in self.get_nodes(1, query):
@@ -49,6 +52,7 @@ class SegmentTree(object):
                 quads[j] += i.quads[j]
         sys.stdout.write("{0} {1} {2} {3}".format(*quads))
 
+    #@profile
     def get_nodes(self, i_node, query):
         ret_nodes = []
         node = self.elements[i_node]
@@ -65,8 +69,9 @@ class SegmentTree(object):
                 self._update_segment(node, leftnode, rightnode,
                                      q.tx, q.ty) 
             else:
-                node.op(node.query.tx, node.query.ty)
+                qnode = node.query
                 node.query = None
+                node.op(qnode.tx, qnode.ty)
 
         interval = Query(max(node.init, query.init), min(node.end, query.end))
         if node.init == interval.init and node.end == interval.end:
@@ -82,6 +87,7 @@ class SegmentTree(object):
                 ret_nodes.extend(right_nodes)
         return ret_nodes
 
+    #@profile
     def build(self):
         for i in range(self.zero - 1, 0, -1):
             # get nodes 
@@ -92,10 +98,10 @@ class SegmentTree(object):
             right_node = self.elements[2*i + 1]
 
             if right_node is not None:
-                segment = Segment(left_node.init, right_node.end)
+                segment = Segment(left_node.init, right_node.end, [0]*4)
                 segment.update_quads(left_node, right_node)
             else:
-                segment = Segment(left_node.init, left_node.end)
+                segment = Segment(left_node.init, left_node.end, [0]*4)
                 segment.update_quads_left(left_node)
 
             segment.n = i
@@ -106,11 +112,11 @@ class SegmentTree(object):
         if segment is not None:
             self.update_node(segment, query)
 
+    #@profile 
     def _update_segment(self, segment, leftchild, rightchild, tx, ty):
 
         # check it is a perfect match of segments
             log('updating segment node', segment, segment.query)
-            assert segment.query is None
             segment.op(tx, ty)
             # lazy evaluation
             if leftchild.query is not None:
@@ -134,6 +140,7 @@ class SegmentTree(object):
                     log('rightchild query', rightchild, rightchild_query)
             return 
 
+    #@profile
     def update_node(self, segment, query):
 
         if segment is None or segment.init > query.end or segment.end < query.init:
@@ -216,25 +223,15 @@ class Query(object):
 
 class Segment(object):
 
-    def __init__(self, init, end, x=None, y=None):
+    def __init__(self, init, end, quads=None):
         self.init = int(init) if init else None
         self.end = int(end) if end else None
-        self.x = x
-        self.y = y
-        self.quads = [0] * 4
-        if x is not None:
-            self._calculate_interval()
+        self.quads = quads
         self.n = -1
         self.query = None
 
-    def _swap_coordinates(self, tx, ty):
-        if tx % 2 != 0:
-            self.y = -self.y
-        if ty % 2 != 0:
-            self.x = -self.x
-        self._calculate_interval()
-
-    def _swap_quadrants(self, tx, ty):
+    #@profile
+    def op(self, tx, ty):
         def _unit_swapping(previous, next):
             old = self.quads[previous]
             self.quads[previous] = self.quads[next]
@@ -247,34 +244,12 @@ class Segment(object):
             _unit_swapping(QUAD_1, QUAD_2)
             _unit_swapping(QUAD_4, QUAD_3)
 
-    def op(self, tx, ty):
-        if self.x is not None:
-            self._swap_coordinates(tx, ty)
-        else:
-            self._swap_quadrants(tx, ty)
-        self.query = None
-        log("operation", self, tx, ty)
-
     def update_quads(self, left_node, right_node):
         for i in range(4):
             self.quads[i] = left_node.quads[i] + right_node.quads[i]
 
     def update_quads_left(self, left_node):
-        for i in range(4):
-            self.quads[i] = left_node.quads[i]
-
-    def _calculate_interval(self):
-        self.quads = [0] * 4
-        if self.x < 0:
-            if self.y < 0:
-                self.quads[QUAD_3] = 1
-            else:
-                self.quads[QUAD_2] = 1
-        else:
-            if self.y < 0:
-                self.quads[QUAD_4] = 1
-            else:
-                self.quads[QUAD_1] = 1
+        self.quads = list(left_node.quads)
             
     def __repr__(self):
         return self.__str__()
@@ -282,17 +257,17 @@ class Segment(object):
     def __str__(self):
         return 'S{3} ({0}, {1}) {2}'.format(self.init, self.end, self.quads, self.n)
 
+
 #@profile
 def merge_queries(intervals):
     """
     integrate the interval C and return processed_interval and non_processed_intervals
     if an interval does not have C or tx % 2 != 0 or ty % 2 != 0, dismiss it
     """
-    Serie = namedtuple('Serie', ['point', 'is_end', 'tx', 'ty', 'tc'])
     series = []
     for i in intervals:
-        series.append(Serie(i.init, False, i.tx, i.ty, i.tc))
-        series.append(Serie(i.end, True, i.tx, i.ty, i.tc))
+        series.append((i.init, False, i.tx, i.ty, i.tc))
+        series.append((i.end, True, i.tx, i.ty, i.tc))
 
     series.sort()
 
@@ -301,7 +276,6 @@ def merge_queries(intervals):
     deleted_intervals = []
 
     first_series = series.pop(0)
-    assert first_series[1] == BEGIN
     next_i = first_series[0]
     next_tx = first_series[2]
     next_ty = first_series[3]
@@ -309,26 +283,26 @@ def merge_queries(intervals):
 
     for s in series:
         next_interval = None
-        if s.is_end:
-            if next_i <= s.point:
-                next_interval = Query(next_i, s.point)
+        if s[1]:
+            if next_i <= s[0]:
+                next_interval = Query(next_i, s[0])
                 next_interval.tx = next_tx
                 next_interval.ty = next_ty
                 next_interval.tc = next_tc
-            next_i = s.point + 1
-            next_tx -= s.tx
-            next_ty -= s.ty
-            next_tc -= s.tc
+            next_i = s[0] + 1
+            next_tx -= s[2]
+            next_ty -= s[3]
+            next_tc -= s[4]
         else:
-            if next_i != s.point:
-                next_interval = Query(next_i, s.point - 1)
+            if next_i != s[0]:
+                next_interval = Query(next_i, s[0] - 1)
                 next_interval.tx = next_tx
                 next_interval.ty = next_ty
                 next_interval.tc = next_tc
-                next_i = s.point
-            next_tx += s.tx
-            next_ty += s.ty
-            next_tc += s.tc
+                next_i = s[0]
+            next_tx += s[2]
+            next_ty += s[3]
+            next_tc += s[4]
 
         if next_interval:
             if next_interval.tx % 2 == 0 and next_interval.ty % 2 == 0:
@@ -352,19 +326,33 @@ def process_points(points, intervals):
             for j in range(i.i, i.j + 1):
                 points.get(j).x = -points.get(j).x
 
+
+def get_interval_from_coords(cx, cy):
+    if cx < 0:
+        if cy < 0:
+            return QUAD_3
+        else:
+            return QUAD_2
+    else:
+        if cy < 0:
+            return QUAD_4
+        else:
+            return QUAD_1
+
+
 #@profile
 def main():
     import sys
     lines = sys.stdin.readlines()
-    #lines = open('sample.txt').readlines()
-    #lines = open('input01.txt').readlines()
 
     # get the points
     n_points = int(lines.pop(0))
     tree = SegmentTree(n_points)
     for i in range(1, n_points + 1):
         coords = lines.pop(0).split()
-        tree.append(Segment(None, None, int(coords[0]), int(coords[1])))
+        quads = [0] * 4
+        quads[get_interval_from_coords(int(coords[0]), int(coords[1]))] = 1
+        tree.append(Segment(None, None, quads))
 
     tree.build()
 
@@ -374,16 +362,16 @@ def main():
     for _ in range(n_queries):
         values = lines.pop(0).split()
         query = Query(int(values[1]), int(values[2]), values[0])
-        log("%s" % ' '.join(values))
         queries.append(query)
         if values[0] == "C":
             if not first:
                 sys.stdout.write('\n')
             first = False
+            #for q in queries:
+            #    tree.update(1, q)
+            #queries = []
             if queries:
                 processing_queries, queries = merge_queries(queries)
-                log('queries', queries)
-                log('processing_queries', processing_queries)
                 for q in processing_queries:
                     tree.update(1, q)
             tree.query(query)

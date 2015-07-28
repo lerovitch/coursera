@@ -245,7 +245,7 @@ def process_points(points, intervals):
 def main():
     import sys
     #lines = sys.stdin.readlines()
-    lines = open('input01.txt').readlines()
+    lines = open('sample.txt').readlines()
 
     # get the points
     n_points = int(lines.pop(0))
@@ -260,8 +260,7 @@ def main():
     queries = []
     first = True
     intervals = []
-    #for _ in range(n_queries):
-    for _ in range(45):
+    for _ in range(n_queries):
             values = lines.pop(0).split()
             intervals.append(Interval(*values))
             if values[0] == "C":
