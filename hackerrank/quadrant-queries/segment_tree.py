@@ -123,6 +123,7 @@ def query_tree(tree, query):
             return [0, 0, 0, 0]
 
         if node.init >= query.init and query.end >= node.end:
+            print node
             return node.quads
 
         if i < zero:
@@ -166,7 +167,7 @@ def main():
 
     n_queries = int(lines.pop(0))
     first = True
-    for _ in range(n_queries):
+    for _ in range(14):
         values = lines.pop(0).split()
         if values[0] == "X":
             query = Query(int(values[1]), int(values[2]), 1, 0)
